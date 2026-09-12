@@ -16,9 +16,16 @@
 // Atualiza o texto de status exibido perto do botão de salvar/sincronizar (ex.: "Salvando...", "Salvo").
 function setStatus(text, ok){
   const el = document.getElementById('sync-status');
-  if(el) el.textContent = text;
+  if(el){
+    el.textContent = text == null ? '' : String(text);
+  }
+
   const dot = document.getElementById('status-dot');
-  if(dot) dot.style.background = ok === false ? 'var(--neg)' : (ok === 'busy' ? 'var(--y-color)' : 'var(--x-color)');
+  if(dot){
+    dot.style.background = ok === false
+      ? 'var(--neg)'
+      : (ok === 'busy' ? 'var(--y-color)' : 'var(--x-color)');
+  }
 }
 
 // Carrega o ranking da planilha mestra ao iniciar o app (ou ao trocar de sessão) e desenha a tela.
