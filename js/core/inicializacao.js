@@ -33,14 +33,13 @@
 // de index.html onde seu conteúdo deve ser injetado. Os ids de slot aqui
 // precisam bater exatamente com os ids usados em index.html.
 const MODULOS_HTML = [
-  { arquivo: 'modules/modulo-0.html',               fallback: 'modulo-0.html',               slot: 'slot-modulo-0' },
-  { arquivo: 'modules/troca-de-senha.html',         fallback: 'troca-de-senha.html',         slot: 'slot-troca-senha' },
-  { arquivo: 'modules/modulo-1.html',               fallback: 'modulo-1.html',               slot: 'slot-modulo-1' },
-  { arquivo: 'modules/modulo-2.html',               fallback: 'modulo-2.html',               slot: 'slot-modulo-2' },
-  { arquivo: 'modules/modulo-3.html',               fallback: 'modulo-3.html',               slot: 'slot-modulo-3' },
-  { arquivo: 'modules/modulo-4.html',               fallback: 'modulo-4.html',               slot: 'slot-modulo-4' },
-  { arquivo: 'modules/conteudo.html',               fallback: 'conteudo.html',               slot: 'slot-conteudo' },
-  { arquivo: 'modules/configuracoes-de-conta.html', fallback: 'configuracoes-de-conta.html', slot: 'slot-configuracoes-conta' },
+  { arquivo: 'modules/modulo-0.html',                slot: 'slot-modulo-0' },
+  { arquivo: 'modules/troca-de-senha.html',          slot: 'slot-troca-senha' },
+  { arquivo: 'modules/modulo-1.html',                slot: 'slot-modulo-1' },
+  { arquivo: 'modules/modulo-2.html',                slot: 'slot-modulo-2' },
+  { arquivo: 'modules/modulo-3.html',                slot: 'slot-modulo-3' },
+  { arquivo: 'modules/modulo-4.html',                slot: 'slot-modulo-4' },
+  { arquivo: 'modules/configuracoes-de-conta.html',  slot: 'slot-configuracoes-conta' },
 ];
 
 // Busca todos os fragmentos de HTML em paralelo (nenhum depende do
@@ -52,37 +51,29 @@ async function carregarModulosHtml(){
   await Promise.all(MODULOS_HTML.map(async function(modulo){
     const el = document.getElementById(modulo.slot);
     if(!el) return;
-
-    // Login e troca de senha são críticos para o primeiro carregamento.
-    // Eles já vêm embutidos no index.html para não depender de fetch assíncrono.
-    if((modulo.slot === 'slot-modulo-0' && document.getElementById('auth-gate')) ||
-       (modulo.slot === 'slot-troca-senha' && document.getElementById('modal-nova-senha'))) return;
-
     try{
-      let resposta = await fetch('./' + modulo.arquivo, { cache: 'no-store', credentials: 'same-origin' });
-      if(!resposta.ok && modulo.fallback){
-        resposta = await fetch('./' + modulo.fallback, { cache: 'no-store', credentials: 'same-origin' });
-      }
+      const resposta = await fetch(modulo.arquivo);
       if(!resposta.ok) throw new Error('HTTP ' + resposta.status);
       el.innerHTML = await resposta.text();
     }catch(erro){
       console.error('Falha ao carregar ' + modulo.arquivo, erro);
       el.innerHTML = '<p style="padding:24px;color:#c0392b;font-family:monospace;">'
-        + 'Não foi possível carregar o módulo HTML. Verifique se os arquivos existem na publicação do GitHub Pages.'
+        + 'Não foi possível carregar "' + modulo.arquivo + '". '
+        + 'Se você abriu este index.html direto do disco (file://), rode um '
+        + 'servidor local (ex.: <code>python -m http.server</code>) e acesse via http://localhost.'
         + '</p>';
     }
   }));
 }
 
 async function iniciarApp(){
-  document.body.setAttribute('data-app-screen', 'auth');
   if(localStorage.getItem('rankingGeral_sidebarCollapsed') === '1'){
     toggleSidebarCollapse();
   }
 
   const tokenSalvo = sessionStorage.getItem('rankingGeral_token');
   if(!tokenSalvo){
-    document.getElementById('auth-gate')?.classList.remove('hidden');
+    document.getElementById('auth-gate').classList.remove('hidden');
     return;
   }
 
@@ -96,12 +87,11 @@ async function iniciarApp(){
       email: resposta.dados.email,
       papel: resposta.dados.papel
     };
-    document.getElementById('auth-gate')?.classList.add('hidden');
-    document.getElementById('app-shell')?.classList.remove('hidden');
-    document.body.setAttribute('data-app-screen', 'app');
+    document.getElementById('auth-gate').classList.add('hidden');
+    document.getElementById('app-shell').classList.remove('hidden');
     aplicarPermissoesPapel();
     atualizarBarraIdentidade();
-    await Promise.resolve(loadState());
+    loadState();
   }catch(erro){
     console.error('Sessão salva inválida ou expirada', erro);
     encerrarSessaoLocal();
@@ -120,3 +110,19 @@ window.addEventListener('beforeunload', saveState);
 window.addEventListener('pagehide', saveState);
 window.addEventListener('blur', saveState);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveState(); });
+
+/* --------------------------------------------------------------------------
+   PWA: registra o service worker (sw.js, na raiz) que faz cache do
+   "app shell" (index.html, CSS, JS, fragmentos de módulo) para permitir
+   abrir o app offline ou com rede instável, e habilita "instalar app" no
+   celular/desktop via manifest.webmanifest. Não interfere em nada que já
+   existia acima; se o navegador não suportar Service Worker, o app
+   continua funcionando normalmente (só sem cache offline).
+   -------------------------------------------------------------------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch((erro)=>{
+      console.error('Falha ao registrar o service worker', erro);
+    });
+  });
+}

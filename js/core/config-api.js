@@ -14,42 +14,18 @@
 /* --------------------------------------------------------------------------
    URL do Web App publicado a partir do Code.gs (Google Apps Script).
    É o ÚNICO endpoint que o front-end conhece: todas as ações (login,
-   salvar ranking, listar usuários etc.) passam por aqui, diferenciadas
+   salvar ranking, listar usuários, OCR etc.) passam por aqui, diferenciadas
    pelo campo "action" enviado no corpo/query da requisição.
    -------------------------------------------------------------------------- */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzB-zCaIRIDt4amlwcQIRDzQUtot2NuNV47r0s-t6xitCk7gZvaORVM8gZ3GiBfnDJBYw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzzE5jhGAw2y_2oDWJ1kBL-b_-gvbmXBdNdu_kZdGvl4Pp_ArPDWSR2rUtcBQ4qz54NAQ/exec';
 
 /* Chamada autenticada/mutável (POST) — usada para toda ação que grava ou
    altera dado no backend (login, salvar ranking, criar usuário...).
    Recebe o payload já pronto (objeto JS) e devolve o JSON de resposta. */
 async function chamarAPI(payload){
-  const controlador = new AbortController();
-  const timer = setTimeout(() => controlador.abort(), 30000);
-  try{
-    const resposta = await fetch(API_URL, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'omit',
-      redirect: 'follow',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
-      signal: controlador.signal
-    });
-    if(!resposta.ok) throw new Error('Erro de rede (HTTP ' + resposta.status + ')');
-    const texto = await resposta.text();
-    try{
-      return JSON.parse(texto);
-    }catch(parseErro){
-      console.error('Resposta inválida da API:', texto);
-      throw new Error('A API respondeu em formato inválido.');
-    }
-  }catch(erro){
-    if(erro && erro.name === 'AbortError') throw new Error('A API demorou mais de 30 segundos para responder.');
-    throw erro;
-  }finally{
-    clearTimeout(timer);
-  }
+  const resposta = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+  if(!resposta.ok) throw new Error('Erro de rede (HTTP ' + resposta.status + ')');
+  return resposta.json();
 }
 
 /* Chamada de leitura (GET) — usada para ações que só consultam dado
@@ -57,21 +33,9 @@ async function chamarAPI(payload){
    viram querystring via URLSearchParams. */
 async function chamarAPIGet(params){
   const query = new URLSearchParams(params).toString();
-  const resposta = await fetch(API_URL + '?' + query, {
-    method: 'GET',
-    mode: 'cors',
-    credentials: 'omit',
-    redirect: 'follow',
-    cache: 'no-store'
-  });
+  const resposta = await fetch(API_URL + '?' + query);
   if(!resposta.ok) throw new Error('Erro de rede (HTTP ' + resposta.status + ')');
-  const texto = await resposta.text();
-  try{
-    return JSON.parse(texto);
-  }catch(parseErro){
-    console.error('Resposta GET inválida da API:', texto);
-    throw new Error('A API respondeu em formato inválido.');
-  }
+  return resposta.json();
 }
 
 /* --------------------------------------------------------------------------

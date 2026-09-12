@@ -13,7 +13,7 @@
 // Lista de ids de <section class="view"> que qualquer usuário logado pode
 // ver, e a lista estendida (VIEWS_ADMIN) que inclui a view exclusiva de
 // administrador ("config" = Configurações Gerais / painel de usuários).
-const VIEWS = ['faixas','analises','conteudo','lancar','config','conta'];
+const VIEWS = ['faixas','analises','lancar','config','conta'];
 
 const VIEWS_ADMIN = ['lancar','config'];
 
@@ -23,8 +23,6 @@ const VIEWS_ADMIN = ['lancar','config'];
 // dias lançados), dispara o carregamento na hora em que a view é aberta.
 function mostrarView(nome){
   if(VIEWS_ADMIN.indexOf(nome) !== -1 && !souAdmin()) nome = 'faixas';
-  const main = document.querySelector('.main');
-  if(main) main.setAttribute('data-active-view', nome);
   VIEWS.forEach(function(v){
     const el = document.getElementById('view-'+v);
     if(el) el.classList.toggle('hidden', v !== nome);
@@ -33,13 +31,10 @@ function mostrarView(nome){
     btn.classList.toggle('active', btn.dataset.view === nome);
   });
   if(nome === 'config') carregarUsuariosSeNecessario();
-  if(nome === 'config' || nome === 'analises' || nome === 'conteudo') carregarResumosSeNecessario();
+  if(nome === 'config' || nome === 'analises') carregarResumosSeNecessario();
   if(nome === 'analises'){ popularFiltroDias(); aplicarFiltroAnalises(); }
   if(nome === 'conta') renderContaView();
   toggleSidebarMobile(false);
-  const mainEl = document.querySelector('.main');
-  if(mainEl && typeof mainEl.scrollTo === 'function') mainEl.scrollTo({top:0, left:0, behavior:'auto'});
-  window.scrollTo({top:0, left:0, behavior:'auto'});
 }
 
 // Alterna entre as abas "Preencher formulário" e "Colar" dentro do módulo

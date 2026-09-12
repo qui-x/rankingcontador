@@ -8,11 +8,11 @@
    respostas poderia mostrar dado desatualizado ou quebrar o fluxo de sessão.
 
    Ao alterar qualquer arquivo do app shell, troque o número da versão em
-   CACHE_NAME (ex.: 'ranking-geral-v29-real-logo') — isso força os usuários a
+   CACHE_NAME (ex.: 'ranking-geral-v2') — isso força os usuários a
    baixarem a versão nova em vez de continuarem presos no cache antigo.
    ============================================================================ */
 
-const CACHE_NAME = 'ranking-contador-v30-logo-build';
+const CACHE_NAME = 'ranking-geral-v2';
 
 const APP_SHELL = [
   './',
@@ -26,13 +26,6 @@ const APP_SHELL = [
   './modules/modulo-3.html',
   './modules/modulo-4.html',
   './modules/configuracoes-de-conta.html',
-  './modulo-0.html',
-  './troca-de-senha.html',
-  './modulo-1.html',
-  './modulo-2.html',
-  './modulo-3.html',
-  './modulo-4.html',
-  './configuracoes-de-conta.html',
   './js/a11y/a11y.js',
   './js/a11y/acessibilidade.js',
   './js/core/config-api.js',
@@ -59,10 +52,6 @@ const APP_SHELL = [
   './js/features/usuarios.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
-  './assets/icons/icon-maskable-512.png',
-  './assets/logo-ranking-geral.png',
-  './assets/logo-ranking-geral-animada.svg',
-  './assets/logo-ranking-geral-construcao.svg',
 ];
 
 self.addEventListener('install', (evento) => {
@@ -95,20 +84,6 @@ self.addEventListener('fetch', (evento) => {
     return;
   }
 
-  const isCritical = url.pathname.endsWith('/index.html') || url.pathname.endsWith('/sw.js') || url.pathname.endsWith('/manifest.webmanifest');
-  if(isCritical){
-    evento.respondWith(
-      fetch(evento.request).then((respostaRede) => {
-        if(respostaRede && respostaRede.ok){
-          const copia = respostaRede.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));
-        }
-        return respostaRede;
-      }).catch(() => caches.match(evento.request))
-    );
-    return;
-  }
-
   evento.respondWith(
     caches.match(evento.request).then((respostaCache) => {
       const buscaRede = fetch(evento.request)
@@ -120,6 +95,9 @@ self.addEventListener('fetch', (evento) => {
           return respostaRede;
         })
         .catch(() => respostaCache);
+
+      // "Stale-while-revalidate": mostra o cache na hora (se existir) e
+      // atualiza em segundo plano; sem cache, espera a rede.
       return respostaCache || buscaRede;
     })
   );
